@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="TodoApp.Desktop" />
+  <assembly fullname="Avalonia.Base" />
+  <assembly fullname="Avalonia.Controls" />
+  <assembly fullname="Avalonia.Themes.Fluent" />
+</linker>
+

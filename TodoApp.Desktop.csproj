@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.0.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.0.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.5" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.5" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="Roots.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\**" />
+    <Compile Remove="wwwroot\**" />
+    <Compile Remove="Properties\launchSettings.json" />
+    <Compile Remove="appsettings*.json" />
+    <Compile Remove="TodoApp.csproj" />
+    <Compile Remove="Views\**\*.cshtml" />
+    <Compile Remove="Views\**\*.cshtml.cs" />
+    <EmbeddedResource Remove="wwwroot\**" />
+    <EmbeddedResource Remove="Views\**\*.cshtml" />
+    <AvaloniaResource Remove="wwwroot\**" />
+    <AvaloniaResource Remove="Views\**\*.cshtml" />
+    <None Remove="Controllers\**" />
+    <None Remove="wwwroot\**" />
+    <None Remove="Properties\launchSettings.json" />
+    <None Remove="appsettings*.json" />
+    <None Remove="Views\**\*.cshtml" />
+  </ItemGroup>
+
+</Project>
+

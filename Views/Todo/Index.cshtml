@@ -1,0 +1,67 @@
+@model IEnumerable<TodoApp.Models.Todo>
+
+@{
+    ViewData["Title"] = "My Todos";
+}
+
+<div class="todo-container">
+    <div class="todo-header">
+        <h2>My Todos</h2>
+        <a asp-action="Create" class="btn btn-primary">+ Add New Todo</a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="todo-list">
+            @foreach (var item in Model)
+            {
+                <div class="todo-item @(item.IsCompleted ? "completed" : "")">
+                    <div class="todo-content">
+                        <div class="todo-header-item">
+                            <h3 class="todo-title">@item.Title</h3>
+                            <div class="todo-actions">
+                                @if (item.IsCompleted)
+                                {
+                                    <span class="badge badge-success">Completed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-pending">Pending</span>
+                                }
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(item.Description))
+                        {
+                            <p class="todo-description">@item.Description</p>
+                        }
+                        <div class="todo-meta">
+                            <small>Created: @item.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                            @if (item.CompletedAt.HasValue)
+                            {
+                                <small>Completed: @item.CompletedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                            }
+                        </div>
+                    </div>
+                    <div class="todo-buttons">
+                        <form asp-action="ToggleComplete" method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-sm @(item.IsCompleted ? "btn-warning" : "btn-success")">
+                                @(item.IsCompleted ? "↩ Undo" : "✓ Complete")
+                            </button>
+                        </form>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-secondary">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No todos yet. Create your first todo to get started!</p>
+            <a asp-action="Create" class="btn btn-primary">Create Todo</a>
+        </div>
+    }
+</div>
+

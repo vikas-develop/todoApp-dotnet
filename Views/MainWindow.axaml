@@ -1,0 +1,314 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TodoApp.Desktop.ViewModels"
+        xmlns:conv="using:TodoApp.Desktop.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+        x:Class="TodoApp.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Todo App" Width="1000" Height="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#F8FAFC">
+    
+    <Window.Resources>
+        <conv:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
+        <conv:BoolToGrayConverter x:Key="BoolToGrayConverter"/>
+        <conv:BoolToToggleTextConverter x:Key="BoolToToggleTextConverter"/>
+        <conv:StringToBoolConverter x:Key="StringToBoolConverter"/>
+        <conv:BoolToTextDecorationsConverter x:Key="BoolToTextDecorationsConverter"/>
+    </Window.Resources>
+    
+    <Window.Styles>
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,20"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#6366F1"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.primary:pointerover">
+            <Setter Property="Background" Value="#4F46E5"/>
+        </Style>
+        <Style Selector="Button.success">
+            <Setter Property="Background" Value="#10B981"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="#EF4444"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#64748B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Border.todo-card">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        <Style Selector="Border.todo-card:pointerover">
+            <Setter Property="BorderBrush" Value="#6366F1"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.completed">
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="Background" Value="#F1F5F9"/>
+        </Style>
+        <Style Selector="Border.selected">
+            <Setter Property="BorderBrush" Value="#6366F1"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="📝 Todo App" Classes="header" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="400,*">
+            <!-- Left Panel: Todo List -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto" Margin="0,0,10,0">
+                <!-- Add New Todo Section -->
+                <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+                        Classes="todo-card" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Add New Todo" FontWeight="SemiBold" 
+                                   FontSize="16" Margin="0,0,0,12" Foreground="#1E293B"/>
+                        <TextBox Text="{Binding NewTodoTitle}" 
+                                 Watermark="Enter todo title..."
+                                 Margin="0,0,0,8"/>
+                        <TextBox Text="{Binding NewTodoDescription}" 
+                                 Watermark="Enter description (optional)..."
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 Height="60" Margin="0,0,0,12"/>
+                        <Button Content="Add Todo" Classes="primary"
+                                Command="{Binding AddTodoCommand}"
+                                HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Todo List -->
+                <ScrollViewer Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Todos}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="todo-card" 
+                                            Classes.completed="{Binding IsCompleted}"
+                                            Classes.selected="{Binding IsSelected}"
+                                            Cursor="Hand"
+                                            PointerPressed="TodoCard_PointerPressed"
+                                            Tag="{Binding}">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                            <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding Title}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="16"
+                                                           TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToTextDecorationsConverter}}"
+                                                           Foreground="{Binding IsCompleted, Converter={StaticResource BoolToGrayConverter}}"/>
+                                                <TextBlock Text="{Binding Description}" 
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,4,0,0"
+                                                           Foreground="#64748B"
+                                                           Opacity="0.8"/>
+                                            </StackPanel>
+                                            
+                                            <Border Grid.Column="1" Grid.Row="0" 
+                                                    Background="{Binding IsCompleted, Converter={StaticResource BoolToStatusBrushConverter}}"
+                                                    CornerRadius="12" 
+                                                    Padding="8,4" 
+                                                    Margin="0,0,0,0"
+                                                    BorderThickness="0"
+                                                    VerticalAlignment="Top"
+                                                    HorizontalAlignment="Right">
+                                                <TextBlock Text="{Binding StatusText}" 
+                                                           FontSize="9" 
+                                                           Foreground="White"
+                                                           FontWeight="Bold"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"/>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" 
+                                                        Orientation="Horizontal" Margin="0,8,0,0">
+                                                <TextBlock Text="{Binding CreatedAtText}" 
+                                                           FontSize="11" 
+                                                           Foreground="#94A3B8"/>
+                                                <TextBlock Text=" • " 
+                                                           FontSize="11" 
+                                                           Foreground="#94A3B8"
+                                                           IsVisible="{Binding CompletedAtText, Converter={StaticResource StringToBoolConverter}}"/>
+                                                <TextBlock Text="{Binding CompletedAtText}" 
+                                                           FontSize="11" 
+                                                           Foreground="#94A3B8"
+                                                           IsVisible="{Binding CompletedAtText, Converter={StaticResource StringToBoolConverter}}"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" 
+                                                        Orientation="Horizontal" Margin="0,12,0,0">
+                                                <Button Content="{Binding IsCompleted, Converter={StaticResource BoolToToggleTextConverter}}" 
+                                                        Classes="success"
+                                                        Click="ToggleComplete_Click"
+                                                        Tag="{Binding}"/>
+                                                <Button Content="Edit" Classes="secondary"
+                                                        Click="EditTodo_Click"
+                                                        Tag="{Binding}"/>
+                                                <Button Content="Delete" Classes="danger"
+                                                        Click="DeleteTodo_Click"
+                                                        Tag="{Binding}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Right Panel: Details/Edit (when selected) -->
+            <Border Grid.Column="1" Grid.Row="0" Classes="todo-card" 
+                    IsVisible="{Binding IsTodoSelected}">
+                <!-- View Mode -->
+                <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsNotEditing}">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="📋 Todo Details" 
+                                   FontWeight="SemiBold" FontSize="18" 
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Title:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <TextBlock Text="{Binding SelectedTodo.Title}" 
+                                       Margin="0,0,0,16" TextWrapping="Wrap"
+                                       Foreground="#64748B"/>
+                            
+                            <TextBlock Text="Description:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"
+                                       IsVisible="{Binding SelectedTodo.Description, Converter={StaticResource StringToBoolConverter}}"/>
+                            <TextBlock Text="{Binding SelectedTodo.Description}" 
+                                       Margin="0,0,0,16" TextWrapping="Wrap"
+                                       Foreground="#64748B"
+                                       IsVisible="{Binding SelectedTodo.Description, Converter={StaticResource StringToBoolConverter}}"/>
+                            
+                            <TextBlock Text="Status:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <Border Background="{Binding SelectedTodo.IsCompleted, Converter={StaticResource BoolToStatusBrushConverter}}"
+                                    CornerRadius="16" 
+                                    Padding="10,6" 
+                                    HorizontalAlignment="Left" 
+                                    Margin="0,0,0,16"
+                                    BorderThickness="0">
+                                <TextBlock Text="{Binding SelectedTodo.StatusText}" 
+                                           FontSize="12" 
+                                           Foreground="White"
+                                           FontWeight="SemiBold"/>
+                            </Border>
+                            
+                            <TextBlock Text="Created:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <TextBlock Text="{Binding SelectedTodo.CreatedAtText}" 
+                                       Margin="0,0,0,16"
+                                       Foreground="#64748B"/>
+                            
+                            <TextBlock Text="Completed:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"
+                                       IsVisible="{Binding SelectedTodo.CompletedAtText, Converter={StaticResource StringToBoolConverter}}"/>
+                            <TextBlock Text="{Binding SelectedTodo.CompletedAtText}" 
+                                       Margin="0,0,0,16"
+                                       Foreground="#64748B"
+                                       IsVisible="{Binding SelectedTodo.CompletedAtText, Converter={StaticResource StringToBoolConverter}}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="✏️ Edit" Classes="primary"
+                                Command="{Binding EditTodoCommand}"
+                                CommandParameter="{Binding SelectedTodo}"
+                                MinWidth="120"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Right Panel: Edit Mode (when editing) -->
+            <Border Grid.Column="1" Grid.Row="0" Classes="todo-card" 
+                    IsVisible="{Binding IsEditing}">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="✏️ Edit Todo" 
+                                   FontWeight="SemiBold" FontSize="18" 
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Title:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <TextBox Text="{Binding SelectedTodo.Title, Mode=TwoWay}" 
+                                     Watermark="Enter todo title"
+                                     Margin="0,0,0,16"
+                                     MinHeight="35"/>
+                            
+                            <TextBlock Text="Description:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <TextBox Text="{Binding SelectedTodo.Description, Mode=TwoWay}" 
+                                     Watermark="Enter description (optional)"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     MinHeight="120" Margin="0,0,0,16"/>
+                            
+                            <Border Background="#F8FAFC" 
+                                    BorderBrush="#E2E8F0" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4" 
+                                    Padding="12" 
+                                    Margin="0,0,0,16">
+                                <CheckBox Content="Mark as completed" 
+                                          IsChecked="{Binding SelectedTodo.IsCompleted, Mode=TwoWay}"
+                                          FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="💾 Save Changes" Classes="primary"
+                                Command="{Binding SaveTodoCommand}"
+                                MinWidth="120"/>
+                        <Button Content="❌ Cancel" Classes="secondary"
+                                Command="{Binding CancelEditCommand}"
+                                MinWidth="120"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Empty State -->
+            <Border Grid.Column="1" Grid.Row="0" Classes="todo-card" 
+                    IsVisible="{Binding !IsTodoSelected}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="👆" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    <TextBlock Text="Select a todo to view details" 
+                               FontSize="16" 
+                               Foreground="#64748B"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
+
