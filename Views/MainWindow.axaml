@@ -8,8 +8,16 @@
         x:Class="TodoApp.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Todo App" Width="1000" Height="700"
-        WindowStartupLocation="CenterScreen"
-        Background="#F8FAFC">
+        Icon="avares://TodoApp.Desktop/Assets/appicon.png"
+        WindowStartupLocation="CenterScreen">
+    
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewTodoCommand}"/>
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveTodoCommand}"/>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelEditCommand}"/>
+        <KeyBinding Gesture="Delete" Command="{Binding DeleteTodoCommand}" CommandParameter="{Binding SelectedTodo}"/>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding ToggleThemeCommand}"/>
+    </Window.KeyBindings>
     
     <Window.Resources>
         <conv:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
@@ -70,6 +78,7 @@
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         </Style>
         <Style Selector="Border.todo-card:pointerover">
             <Setter Property="BorderBrush" Value="#6366F1"/>
@@ -91,6 +100,19 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_New Todo" Command="{Binding NewTodoCommand}"/>
                 <Separator/>
+                <MenuItem Header="_Export">
+                    <MenuItem Header="Export to _JSON" Command="{Binding ExportToJsonCommand}"/>
+                    <MenuItem Header="Export to _CSV" Command="{Binding ExportToCsvCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="Create _Backup" Command="{Binding ExportBackupCommand}"/>
+                </MenuItem>
+                <MenuItem Header="_Import">
+                    <MenuItem Header="Import from _JSON" Command="{Binding ImportFromJsonCommand}"/>
+                    <MenuItem Header="Import from _CSV" Command="{Binding ImportFromCsvCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="_Restore Backup" Command="{Binding RestoreBackupCommand}"/>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
             </MenuItem>
             <MenuItem Header="_View">
@@ -104,6 +126,10 @@
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding NavigateToAboutCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Theme">
+                <MenuItem Header="Toggle _Dark Mode" Command="{Binding ToggleThemeCommand}" 
+                          InputGesture="Ctrl+D"/>
             </MenuItem>
         </Menu>
 
@@ -154,38 +180,91 @@
             <!-- Left Panel: Todo List -->
             <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*" ColumnDefinitions="*,Auto" Margin="0,0,10,0">
                 <!-- Search and Filter Section -->
-                <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
-                        Classes="todo-card" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="🔍 Search &amp; Filter" FontWeight="SemiBold" 
-                                   FontSize="16" Margin="0,0,0,12" Foreground="#1E293B"/>
-                        
-                        <!-- Search Box -->
-                        <TextBox Text="{Binding SearchText}" 
-                                 Watermark="Search todos..."
-                                 Margin="0,0,0,12"/>
-                        
-                        <!-- Filter and Sort -->
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*">
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">
-                                <TextBlock Text="Status:" FontSize="12" FontWeight="SemiBold" 
-                                           Margin="0,0,0,4" Foreground="#64748B"/>
-                                <ComboBox ItemsSource="{Binding FilterStatusOptions}"
-                                          SelectedItem="{Binding SelectedFilterStatusText}"
-                                          HorizontalAlignment="Stretch"/>
+                <Expander Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" IsExpanded="True" Margin="0,0,0,16" Width="380">
+                    <Expander.Header>
+                        <TextBlock Text="🔍 Search &amp; Filter" FontWeight="SemiBold" FontSize="16" Foreground="#1E293B"/>
+                    </Expander.Header>
+                    <Border Classes="todo-card" Margin="0,8,0,0">
+                        <StackPanel>
+                            <!-- Search Box -->
+                            <TextBox Text="{Binding SearchText}" 
+                                     Watermark="Search todos..."
+                                     Margin="0,0,0,12"/>
+                            
+                            <!-- Filter and Sort -->
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">
+                                    <TextBlock Text="Status:" FontSize="12" FontWeight="SemiBold" 
+                                               Margin="0,0,0,4" Foreground="#64748B"/>
+                                    <ComboBox ItemsSource="{Binding FilterStatusOptions}"
+                                              SelectedItem="{Binding SelectedFilterStatusText}"
+                                              HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="4,0,0,0">
+                                    <TextBlock Text="Sort:" FontSize="12" FontWeight="SemiBold" 
+                                               Margin="0,0,0,4" Foreground="#64748B"/>
+                                    <ComboBox ItemsSource="{Binding SortOptions}"
+                                              SelectedItem="{Binding SelectedSortOptionText}"
+                                              HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                    <TextBlock Text="Category:" FontSize="12" FontWeight="SemiBold" 
+                                               Margin="0,0,0,4" Foreground="#64748B"/>
+                                    <ComboBox ItemsSource="{Binding Categories}"
+                                              SelectedItem="{Binding SelectedCategoryForFilter}"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Width="12" Height="12" 
+                                                            CornerRadius="6" 
+                                                            Margin="0,0,8,0"
+                                                            Background="{Binding Color}"/>
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <!-- Add New Todo Section -->
+                <Expander Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" IsExpanded="True" Margin="0,0,0,16" Width="380">
+                    <Expander.Header>
+                        <TextBlock Text="Add New Todo" FontWeight="SemiBold" FontSize="16" Foreground="#1E293B"/>
+                    </Expander.Header>
+                    <Border Classes="todo-card" Margin="0,8,0,0">
+                        <StackPanel>
+                            <StackPanel>
+                                <TextBox Text="{Binding NewTodoTitle}" 
+                                         Watermark="Enter todo title..."
+                                         Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding NewTodoTitleError}"
+                                           FontSize="11"
+                                           Foreground="#EF4444"
+                                           Margin="4,0,0,8"
+                                           IsVisible="{Binding NewTodoTitleError, Converter={StaticResource StringToBoolConverter}}"/>
                             </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="4,0,0,0">
-                                <TextBlock Text="Sort:" FontSize="12" FontWeight="SemiBold" 
-                                           Margin="0,0,0,4" Foreground="#64748B"/>
-                                <ComboBox ItemsSource="{Binding SortOptions}"
-                                          SelectedItem="{Binding SelectedSortOptionText}"
-                                          HorizontalAlignment="Stretch"/>
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBox Text="{Binding NewTodoDescription}" 
+                                         Watermark="Enter description (optional)..."
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         Height="60"
+                                         Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding NewTodoDescriptionError}"
+                                           FontSize="11"
+                                           Foreground="#EF4444"
+                                           Margin="4,0,0,0"
+                                           IsVisible="{Binding NewTodoDescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
                             </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                            <StackPanel Margin="0,0,0,12">
                                 <TextBlock Text="Category:" FontSize="12" FontWeight="SemiBold" 
                                            Margin="0,0,0,4" Foreground="#64748B"/>
                                 <ComboBox ItemsSource="{Binding Categories}"
-                                          SelectedItem="{Binding SelectedCategoryForFilter}"
+                                          SelectedItem="{Binding NewTodoCategory}"
                                           HorizontalAlignment="Stretch">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
@@ -200,62 +279,19 @@
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
                             </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Add New Todo Section -->
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
-                        Classes="todo-card" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="Add New Todo" FontWeight="SemiBold" 
-                                   FontSize="16" Margin="0,0,0,12" Foreground="#1E293B"/>
-                        <StackPanel>
-                            <TextBox Text="{Binding NewTodoTitle}" 
-                                     Watermark="Enter todo title..."
-                                     Margin="0,0,0,4"/>
-                            <TextBlock Text="{Binding NewTodoTitleError}"
-                                       FontSize="11"
-                                       Foreground="#EF4444"
-                                       Margin="4,0,0,8"
-                                       IsVisible="{Binding NewTodoTitleError, Converter={StaticResource StringToBoolConverter}}"/>
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="Priority:" FontSize="12" FontWeight="SemiBold" 
+                                           Margin="0,0,0,4" Foreground="#64748B"/>
+                                <ComboBox ItemsSource="{Binding PriorityOptions}"
+                                          SelectedItem="{Binding NewTodoPriority}"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            <Button Content="Add Todo" Classes="primary"
+                                    Command="{Binding AddTodoCommand}"
+                                    HorizontalAlignment="Stretch"/>
                         </StackPanel>
-                        <StackPanel Margin="0,0,0,12">
-                            <TextBox Text="{Binding NewTodoDescription}" 
-                                     Watermark="Enter description (optional)..."
-                                     AcceptsReturn="True" TextWrapping="Wrap"
-                                     Height="60"
-                                     Margin="0,0,0,4"/>
-                            <TextBlock Text="{Binding NewTodoDescriptionError}"
-                                       FontSize="11"
-                                       Foreground="#EF4444"
-                                       Margin="4,0,0,0"
-                                       IsVisible="{Binding NewTodoDescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
-                        </StackPanel>
-                        <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="Category:" FontSize="12" FontWeight="SemiBold" 
-                                       Margin="0,0,0,4" Foreground="#64748B"/>
-                            <ComboBox ItemsSource="{Binding Categories}"
-                                      SelectedItem="{Binding NewTodoCategory}"
-                                      HorizontalAlignment="Stretch">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Border Width="12" Height="12" 
-                                                    CornerRadius="6" 
-                                                    Margin="0,0,8,0"
-                                                    Background="{Binding Color}"/>
-                                            <TextBlock Text="{Binding Name}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </StackPanel>
-                        <Button Content="Add Todo" Classes="primary"
-                                Command="{Binding AddTodoCommand}"
-                                HorizontalAlignment="Stretch"/>
-                    </StackPanel>
-                </Border>
+                    </Border>
+                </Expander>
 
                 <!-- Todo List -->
                 <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
@@ -299,6 +335,16 @@
                                                             Background="{Binding CategoryColor}"
                                                             VerticalAlignment="Center"
                                                             IsVisible="{Binding CategoryId, Converter={StaticResource NullableIntToBoolConverter}}"/>
+                                                    <Border Background="{Binding PriorityColor}"
+                                                            CornerRadius="8"
+                                                            Padding="6,2"
+                                                            Margin="8,0,0,0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding PriorityText}"
+                                                                   Foreground="White"
+                                                                   FontSize="10"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Border>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Description}" 
                                                            TextWrapping="Wrap"
@@ -411,6 +457,19 @@
                                            Foreground="White"
                                            FontWeight="SemiBold"/>
                             </Border>
+
+                            <TextBlock Text="Priority:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <Border Background="{Binding SelectedTodo.PriorityColor}"
+                                    CornerRadius="16" 
+                                    Padding="10,6" 
+                                    HorizontalAlignment="Left" 
+                                    Margin="0,0,0,16"
+                                    BorderThickness="0">
+                                <TextBlock Text="{Binding SelectedTodo.PriorityText}" 
+                                           FontSize="12" 
+                                           Foreground="White"
+                                           FontWeight="SemiBold"/>
+                            </Border>
                             
                             <TextBlock Text="Created:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
                             <TextBlock Text="{Binding SelectedTodo.CreatedAtText}" 
@@ -473,6 +532,12 @@
                                                Margin="4,0,0,12"
                                                IsVisible="{Binding SelectedTodo.DescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
                                 </StackPanel>
+                            
+                            <TextBlock Text="Priority:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                            <ComboBox ItemsSource="{Binding PriorityOptions}"
+                                      SelectedItem="{Binding SelectedTodo.Priority, Mode=TwoWay}"
+                                      Margin="0,0,0,12"
+                                      HorizontalAlignment="Stretch"/>
                             
                             <Border Background="#F8FAFC" 
                                     BorderBrush="#E2E8F0" 

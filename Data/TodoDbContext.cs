@@ -20,5 +20,9 @@ public class TodoDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.CategoryId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Todo>()
+            .Property(t => t.Priority)
+            .HasDefaultValue(PriorityLevel.Medium);
     }
 }

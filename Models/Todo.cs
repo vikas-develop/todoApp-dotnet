@@ -12,4 +12,5 @@ public class Todo
     public DateTime? CompletedAt { get; set; }
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
+    public PriorityLevel Priority { get; set; } = PriorityLevel.Medium;
 }

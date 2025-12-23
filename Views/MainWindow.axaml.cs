@@ -13,15 +13,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.SetMainWindow(this);
+        }
     }
 
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
         
-        // Set up confirmation dialog handler
+        // Set up confirmation dialog handler and window reference
         if (DataContext is MainWindowViewModel vm)
         {
+            vm.SetMainWindow(this);
             vm.ConfirmationService.ShowConfirmationAsync = ShowConfirmationDialogAsync;
         }
     }
@@ -72,4 +77,3 @@ public partial class MainWindow : Window
         }
     }
 }
-

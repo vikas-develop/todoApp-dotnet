@@ -75,6 +75,9 @@ public partial class TodoViewModel : ViewModelBase
     [ObservableProperty]
     private Category? category;
 
+    [ObservableProperty]
+    private PriorityLevel priority = PriorityLevel.Medium;
+
     private string _titleError = string.Empty;
     public string TitleError
     {
@@ -104,6 +107,7 @@ public partial class TodoViewModel : ViewModelBase
         CompletedAt = todo.CompletedAt;
         CategoryId = todo.CategoryId;
         Category = todo.Category;
+        Priority = todo.Priority;
     }
 
     public Todo ToTodo()
@@ -116,12 +120,22 @@ public partial class TodoViewModel : ViewModelBase
             IsCompleted = IsCompleted,
             CreatedAt = CreatedAt,
             CompletedAt = CompletedAt,
-            CategoryId = CategoryId
+            CategoryId = CategoryId,
+            Priority = Priority
         };
     }
 
     public string CategoryName => Category?.Name ?? "No Category";
     public string CategoryColor => Category?.Color ?? "#94A3B8"; // Gray for no category
+
+    public string PriorityText => Priority.ToString();
+    public string PriorityColor => Priority switch
+    {
+        PriorityLevel.High => "#EF4444",   // Red
+        PriorityLevel.Medium => "#F59E0B", // Amber
+        PriorityLevel.Low => "#22C55E",    // Green
+        _ => "#94A3B8"
+    };
 
     public string StatusText => IsCompleted ? "COMPLETED" : "PENDING";
     public string CreatedAtText => CreatedAt.ToString("MMM dd, yyyy HH:mm");

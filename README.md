@@ -4,6 +4,7 @@ A modern, full-featured Todo application built with .NET 8.0, available as both 
 
 ## 🚀 Features
 
+### Core Functionality
 - ✅ Create, Read, Update, and Delete todos
 - ✅ Mark todos as complete/incomplete
 - ✅ Beautiful, modern UI with responsive design
@@ -11,6 +12,19 @@ A modern, full-featured Todo application built with .NET 8.0, available as both 
 - ✅ Cross-platform desktop support (Windows, Linux, macOS)
 - ✅ Clean MVC architecture (Web) and MVVM pattern (Desktop)
 - ✅ Real-time status updates with visual indicators
+
+### Advanced Features (Desktop)
+- 🔍 **Search & Filter**: Search todos by title/description, filter by status (All, Pending, Completed), and filter by category
+- 📊 **Sorting**: Sort todos by date, title, status, or priority (High/Medium/Low)
+- 🏷️ **Categories/Tags**: Organize todos with color-coded categories
+- ⚡ **Priority Levels**: Set High, Medium, or Low priority with visual indicators
+- 💾 **Data Export/Import**: Export todos to JSON or CSV, import from files, and create/restore backups
+- 🌙 **Dark Mode**: Toggle between light and dark themes with persistent preference
+- ⌨️ **Keyboard Shortcuts**: Fast navigation with keyboard shortcuts
+- 🎨 **Animations**: Smooth transitions and animations for better UX
+- ✅ **Validation**: Input validation with real-time error messages
+- 🔔 **Notifications**: Toast notifications for success and error states
+- ❓ **Confirmation Dialogs**: Confirm critical actions like deletion
 
 ## 📦 Project Structure
 
@@ -33,13 +47,23 @@ TodoApp/
 ├── Data/
 │   └── TodoDbContext.cs     # Entity Framework context
 ├── Models/
-│   └── Todo.cs              # Todo data model
+│   ├── Todo.cs              # Todo data model
+│   ├── Category.cs          # Category model
+│   └── PriorityLevel.cs     # Priority enum
 ├── Services/
-│   └── TodoService.cs       # Data service layer
+│   ├── TodoService.cs       # Data service layer
+│   ├── CategoryService.cs   # Category management
+│   ├── ExportService.cs     # Data export functionality
+│   ├── ImportService.cs     # Data import functionality
+│   ├── ThemeService.cs      # Theme management
+│   ├── NotificationService.cs # Toast notifications
+│   └── ConfirmationService.cs # Confirmation dialogs
 ├── ViewModels/              # Desktop app view models
 │   ├── MainWindowViewModel.cs
 │   ├── TodoViewModel.cs
-│   └── ViewModelBase.cs
+│   ├── ViewModelBase.cs
+│   ├── FilterStatus.cs      # Filter enum
+│   └── SortOption.cs        # Sort options enum
 ├── Views/                   # Both web and desktop views
 │   ├── MainWindow.axaml     # Desktop UI
 │   ├── Todo/                # Web views
@@ -48,6 +72,9 @@ TodoApp/
 ├── wwwroot/                 # Web app static files
 │   └── css/
 │       └── site.css
+├── Assets/                  # Application assets
+│   ├── appicon.png
+│   └── appicon.ico
 ├── TodoApp.csproj          # Web application
 ├── TodoApp.Desktop.csproj  # Desktop application
 └── Program.cs              # Desktop app entry point
@@ -87,6 +114,44 @@ TodoApp/
    dotnet run --project TodoApp.Desktop.csproj
    ```
 
+## 📖 Desktop Application Usage
+
+### Keyboard Shortcuts
+- **Ctrl+N**: New Todo (focus on Todos view)
+- **Ctrl+S**: Save Todo (when editing)
+- **Escape**: Cancel Edit
+- **Delete**: Delete selected todo
+- **Ctrl+D**: Toggle Dark Mode
+
+### Features Guide
+
+#### Search & Filter
+- Use the search box to find todos by title or description
+- Filter by status: All, Pending, or Completed
+- Filter by category to see todos in specific categories
+- Sort by: Date, Title, Status, or Priority
+
+#### Categories
+- Create color-coded categories to organize your todos
+- Assign categories to todos when creating or editing
+- Filter todos by category
+
+#### Priority Levels
+- Set priority when creating or editing todos: High, Medium, or Low
+- Visual indicators show priority with color-coded badges
+- Sort todos by priority to see high-priority items first
+
+#### Export/Import
+- **Export to JSON**: Export all todos to a JSON file
+- **Export to CSV**: Export todos to a CSV file for spreadsheet applications
+- **Create Backup**: Create a complete backup including todos and categories
+- **Import from JSON/CSV**: Import todos from external files
+- **Restore Backup**: Restore from a backup file
+
+#### Dark Mode
+- Toggle dark mode from the menu: **Theme → Toggle Dark Mode** or press **Ctrl+D**
+- Theme preference is saved and persists across application restarts
+
 ## 📦 Building for Distribution
 
 ### Windows Executable
@@ -119,7 +184,7 @@ Both applications use SQLite databases:
 - **Web App:** `todos.db` (created automatically)
 - **Desktop App:** `todos_desktop.db` (created automatically)
 
-The databases are created automatically on first run in the application directory.
+The databases are created automatically on first run in the application directory. The desktop app automatically migrates the database schema when new features are added.
 
 ## 🏗️ Architecture
 
@@ -132,6 +197,7 @@ The databases are created automatically on first run in the application director
 - **Pattern:** MVVM (Model-View-ViewModel)
 - **Framework:** Avalonia UI 11.0
 - **UI:** XAML with Fluent Design
+- **Services:** Modular service architecture for data, export/import, themes, and notifications
 
 ## 🛠️ Technologies Used
 
@@ -152,7 +218,7 @@ The databases are created automatically on first run in the application director
 
 ## 📝 Documentation
 
-- [README.Desktop.md](README.Desktop.md) - Desktop app documentation
+- [README.Desktop.md](README.Desktop.md) - Desktop app detailed documentation
 - [BUILD_WINDOWS.md](BUILD_WINDOWS.md) - Windows build instructions
 - [DISTRIBUTE_WINDOWS.md](DISTRIBUTE_WINDOWS.md) - Distribution guide
 
