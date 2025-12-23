@@ -7,6 +7,8 @@ public enum SortOption
     TitleAscending,
     TitleDescending,
     StatusAscending,
-    StatusDescending
+    StatusDescending,
+    PriorityHighFirst,
+    PriorityLowFirst
 }
 

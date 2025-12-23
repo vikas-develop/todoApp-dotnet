@@ -18,6 +18,16 @@ public class TodoService
             .Options;
         _context = new TodoDbContext(options);
         _context.Database.EnsureCreated();
+
+        // Ensure Priority column exists for existing databases
+        try
+        {
+            _context.Database.ExecuteSqlRaw("SELECT Priority FROM Todos LIMIT 1");
+        }
+        catch
+        {
+            _context.Database.ExecuteSqlRaw("ALTER TABLE Todos ADD COLUMN Priority INTEGER DEFAULT 1");
+        }
     }
 
     public List<Todo> GetAllTodos()
@@ -46,6 +56,7 @@ public class TodoService
             existing.IsCompleted = todo.IsCompleted;
             existing.CompletedAt = todo.CompletedAt;
             existing.CategoryId = todo.CategoryId;
+            existing.Priority = todo.Priority;
             _context.SaveChanges();
         }
     }
