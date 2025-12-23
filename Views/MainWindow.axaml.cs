@@ -1,6 +1,9 @@
+using System;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using TodoApp.Desktop.Services;
 using TodoApp.Desktop.ViewModels;
 
 namespace TodoApp.Desktop.Views;
@@ -10,6 +13,24 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        
+        // Set up confirmation dialog handler
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.ConfirmationService.ShowConfirmationAsync = ShowConfirmationDialogAsync;
+        }
+    }
+
+    private async Task<bool> ShowConfirmationDialogAsync(string title, string message)
+    {
+        var dialog = new ConfirmationDialog(title, message);
+        await dialog.ShowDialog(this);
+        return dialog.Result;
     }
 
     private void TodoCard_PointerPressed(object? sender, PointerPressedEventArgs e)

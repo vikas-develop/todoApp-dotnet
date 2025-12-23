@@ -12,8 +12,50 @@ public partial class TodoViewModel : ViewModelBase
     [ObservableProperty]
     private string title = string.Empty;
 
+    partial void OnTitleChanged(string value)
+    {
+        // Validate in real-time
+        ValidateTitleProperty();
+    }
+
+    public void ValidateTitleProperty()
+    {
+        // Check length before trimming (to catch when user types too much)
+        if (Title.Length > MaxTitleLength)
+        {
+            TitleError = $"Title must be {MaxTitleLength} characters or less";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            TitleError = "Title is required";
+            return;
+        }
+
+        // If we get here, title is valid
+        TitleError = string.Empty;
+    }
+
     [ObservableProperty]
     private string description = string.Empty;
+
+    partial void OnDescriptionChanged(string value)
+    {
+        // Validate in real-time
+        ValidateDescriptionProperty();
+    }
+
+    public void ValidateDescriptionProperty()
+    {
+        if (!string.IsNullOrWhiteSpace(Description) && Description.Length > MaxDescriptionLength)
+        {
+            DescriptionError = $"Description must be {MaxDescriptionLength} characters or less";
+            return;
+        }
+
+        DescriptionError = string.Empty;
+    }
 
     [ObservableProperty]
     private bool isCompleted;
@@ -26,6 +68,23 @@ public partial class TodoViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isSelected;
+
+    private string _titleError = string.Empty;
+    public string TitleError
+    {
+        get => _titleError;
+        set => SetProperty(ref _titleError, value);
+    }
+
+    private string _descriptionError = string.Empty;
+    public string DescriptionError
+    {
+        get => _descriptionError;
+        set => SetProperty(ref _descriptionError, value);
+    }
+
+    private const int MaxTitleLength = 200;
+    private const int MaxDescriptionLength = 1000;
 
     public TodoViewModel() { }
 
@@ -55,5 +114,60 @@ public partial class TodoViewModel : ViewModelBase
     public string StatusText => IsCompleted ? "COMPLETED" : "PENDING";
     public string CreatedAtText => CreatedAt.ToString("MMM dd, yyyy HH:mm");
     public string? CompletedAtText => CompletedAt?.ToString("MMM dd, yyyy HH:mm");
+
+    public bool ValidateTitle(out string error)
+    {
+        error = string.Empty;
+        
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            error = "Title is required";
+            return false;
+        }
+
+        var trimmedTitle = Title.Trim();
+        if (trimmedTitle.Length > MaxTitleLength)
+        {
+            error = $"Title must be {MaxTitleLength} characters or less";
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool ValidateDescription(out string error)
+    {
+        error = string.Empty;
+        
+        if (!string.IsNullOrWhiteSpace(Description) && Description.Length > MaxDescriptionLength)
+        {
+            error = $"Description must be {MaxDescriptionLength} characters or less";
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool Validate(out string error)
+    {
+        if (!ValidateTitle(out var titleError))
+        {
+            error = titleError;
+            TitleError = titleError;
+            return false;
+        }
+
+        if (!ValidateDescription(out var descError))
+        {
+            error = descError;
+            DescriptionError = descError;
+            return false;
+        }
+
+        TitleError = string.Empty;
+        DescriptionError = string.Empty;
+        error = string.Empty;
+        return true;
+    }
 }
 
