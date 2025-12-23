@@ -17,6 +17,8 @@
         <conv:BoolToToggleTextConverter x:Key="BoolToToggleTextConverter"/>
         <conv:StringToBoolConverter x:Key="StringToBoolConverter"/>
         <conv:BoolToTextDecorationsConverter x:Key="BoolToTextDecorationsConverter"/>
+        <conv:NotificationTypeToBrushConverter x:Key="NotificationTypeToBrushConverter"/>
+        <conv:NotificationTypeToIconConverter x:Key="NotificationTypeToIconConverter"/>
     </Window.Resources>
     
     <Window.Styles>
@@ -80,6 +82,40 @@
     </Window.Styles>
 
     <Grid RowDefinitions="Auto,*" Margin="20">
+        <!-- Toast Notifications (Overlay) -->
+        <ItemsControl Grid.Row="0" 
+                      Grid.RowSpan="2"
+                      ItemsSource="{Binding NotificationService.Notifications}"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Margin="0,10,0,0"
+                      MaxWidth="400"
+                      ZIndex="1000">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding Type, Converter={StaticResource NotificationTypeToBrushConverter}}"
+                            CornerRadius="8"
+                            Padding="16,12"
+                            Margin="0,0,0,8"
+                            BorderThickness="0"
+                            Opacity="0.95">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Type, Converter={StaticResource NotificationTypeToIconConverter}}"
+                                       FontSize="18"
+                                       Margin="0,0,12,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Message}"
+                                       FontSize="14"
+                                       Foreground="White"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
             <TextBlock Text="📝 Todo App" Classes="header" VerticalAlignment="Center"/>
@@ -95,13 +131,28 @@
                     <StackPanel>
                         <TextBlock Text="Add New Todo" FontWeight="SemiBold" 
                                    FontSize="16" Margin="0,0,0,12" Foreground="#1E293B"/>
-                        <TextBox Text="{Binding NewTodoTitle}" 
-                                 Watermark="Enter todo title..."
-                                 Margin="0,0,0,8"/>
-                        <TextBox Text="{Binding NewTodoDescription}" 
-                                 Watermark="Enter description (optional)..."
-                                 AcceptsReturn="True" TextWrapping="Wrap"
-                                 Height="60" Margin="0,0,0,12"/>
+                        <StackPanel>
+                            <TextBox Text="{Binding NewTodoTitle}" 
+                                     Watermark="Enter todo title..."
+                                     Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding NewTodoTitleError}"
+                                       FontSize="11"
+                                       Foreground="#EF4444"
+                                       Margin="4,0,0,8"
+                                       IsVisible="{Binding NewTodoTitleError, Converter={StaticResource StringToBoolConverter}}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBox Text="{Binding NewTodoDescription}" 
+                                     Watermark="Enter description (optional)..."
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     Height="60"
+                                     Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding NewTodoDescriptionError}"
+                                       FontSize="11"
+                                       Foreground="#EF4444"
+                                       Margin="4,0,0,0"
+                                       IsVisible="{Binding NewTodoDescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
+                        </StackPanel>
                         <Button Content="Add Todo" Classes="primary"
                                 Command="{Binding AddTodoCommand}"
                                 HorizontalAlignment="Stretch"/>
@@ -259,19 +310,34 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                     
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Title:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
-                            <TextBox Text="{Binding SelectedTodo.Title, Mode=TwoWay}" 
-                                     Watermark="Enter todo title"
-                                     Margin="0,0,0,16"
-                                     MinHeight="35"/>
-                            
-                            <TextBlock Text="Description:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
-                            <TextBox Text="{Binding SelectedTodo.Description, Mode=TwoWay}" 
-                                     Watermark="Enter description (optional)"
-                                     AcceptsReturn="True" TextWrapping="Wrap"
-                                     MinHeight="120" Margin="0,0,0,16"/>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Title:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                                <StackPanel>
+                                    <TextBox Text="{Binding SelectedTodo.Title, Mode=TwoWay}" 
+                                             Watermark="Enter todo title"
+                                             Margin="0,0,0,4"
+                                             MinHeight="35"/>
+                                    <TextBlock Text="{Binding SelectedTodo.TitleError}"
+                                               FontSize="11"
+                                               Foreground="#EF4444"
+                                               Margin="4,0,0,12"
+                                               IsVisible="{Binding SelectedTodo.TitleError, Converter={StaticResource StringToBoolConverter}}"/>
+                                </StackPanel>
+                                
+                                <TextBlock Text="Description:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
+                                <StackPanel>
+                                    <TextBox Text="{Binding SelectedTodo.Description, Mode=TwoWay}" 
+                                             Watermark="Enter description (optional)"
+                                             AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="120"
+                                             Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding SelectedTodo.DescriptionError}"
+                                               FontSize="11"
+                                               Foreground="#EF4444"
+                                               Margin="4,0,0,12"
+                                               IsVisible="{Binding SelectedTodo.DescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
+                                </StackPanel>
                             
                             <Border Background="#F8FAFC" 
                                     BorderBrush="#E2E8F0" 
