@@ -22,7 +22,7 @@ public class TodoService
 
     public List<Todo> GetAllTodos()
     {
-        return _context.Todos.ToList();
+        return _context.Todos.Include(t => t.Category).ToList();
     }
 
     public Todo? GetTodoById(int id)
@@ -45,8 +45,14 @@ public class TodoService
             existing.Description = todo.Description;
             existing.IsCompleted = todo.IsCompleted;
             existing.CompletedAt = todo.CompletedAt;
+            existing.CategoryId = todo.CategoryId;
             _context.SaveChanges();
         }
+    }
+
+    public List<Todo> GetAllTodosWithCategories()
+    {
+        return _context.Todos.Include(t => t.Category).ToList();
     }
 
     public void DeleteTodo(int id)

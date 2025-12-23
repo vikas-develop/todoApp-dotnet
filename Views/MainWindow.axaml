@@ -19,6 +19,10 @@
         <conv:BoolToTextDecorationsConverter x:Key="BoolToTextDecorationsConverter"/>
         <conv:NotificationTypeToBrushConverter x:Key="NotificationTypeToBrushConverter"/>
         <conv:NotificationTypeToIconConverter x:Key="NotificationTypeToIconConverter"/>
+        <conv:FilterStatusToStringConverter x:Key="FilterStatusToStringConverter"/>
+        <conv:SortOptionToStringConverter x:Key="SortOptionToStringConverter"/>
+        <conv:CountToBoolConverter x:Key="CountToBoolConverter"/>
+        <conv:NullableIntToBoolConverter x:Key="NullableIntToBoolConverter"/>
     </Window.Resources>
     
     <Window.Styles>
@@ -81,10 +85,32 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto,*" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,*" Margin="0">
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Todo" Command="{Binding NewTodoCommand}"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Todos" Command="{Binding NavigateToTodosCommand}"/>
+                <MenuItem Header="_Categories" Command="{Binding NavigateToCategoriesCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Settings" Command="{Binding NavigateToSettingsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Manage _Categories" Command="{Binding NavigateToCategoriesCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{Binding NavigateToAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="2" Margin="20">
         <!-- Toast Notifications (Overlay) -->
-        <ItemsControl Grid.Row="0" 
-                      Grid.RowSpan="2"
+        <ItemsControl Grid.Row="0"
                       ItemsSource="{Binding NotificationService.Notifications}"
                       HorizontalAlignment="Right"
                       VerticalAlignment="Top"
@@ -116,17 +142,70 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-            <TextBlock Text="📝 Todo App" Classes="header" VerticalAlignment="Center"/>
-        </StackPanel>
+        <!-- Todos View -->
+        <Grid IsVisible="{Binding IsTodosView}" RowDefinitions="Auto,*">
+            <!-- Header -->
+            <!-- <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+                <TextBlock Text="📝 Todo App" Classes="header" VerticalAlignment="Center"/>
+            </StackPanel> -->
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1" ColumnDefinitions="400,*">
+            <!-- Main Content -->
+            <Grid Grid.Row="1" ColumnDefinitions="400,*">
             <!-- Left Panel: Todo List -->
-            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto" Margin="0,0,10,0">
-                <!-- Add New Todo Section -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*" ColumnDefinitions="*,Auto" Margin="0,0,10,0">
+                <!-- Search and Filter Section -->
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+                        Classes="todo-card" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🔍 Search &amp; Filter" FontWeight="SemiBold" 
+                                   FontSize="16" Margin="0,0,0,12" Foreground="#1E293B"/>
+                        
+                        <!-- Search Box -->
+                        <TextBox Text="{Binding SearchText}" 
+                                 Watermark="Search todos..."
+                                 Margin="0,0,0,12"/>
+                        
+                        <!-- Filter and Sort -->
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*">
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">
+                                <TextBlock Text="Status:" FontSize="12" FontWeight="SemiBold" 
+                                           Margin="0,0,0,4" Foreground="#64748B"/>
+                                <ComboBox ItemsSource="{Binding FilterStatusOptions}"
+                                          SelectedItem="{Binding SelectedFilterStatusText}"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="4,0,0,0">
+                                <TextBlock Text="Sort:" FontSize="12" FontWeight="SemiBold" 
+                                           Margin="0,0,0,4" Foreground="#64748B"/>
+                                <ComboBox ItemsSource="{Binding SortOptions}"
+                                          SelectedItem="{Binding SelectedSortOptionText}"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                <TextBlock Text="Category:" FontSize="12" FontWeight="SemiBold" 
+                                           Margin="0,0,0,4" Foreground="#64748B"/>
+                                <ComboBox ItemsSource="{Binding Categories}"
+                                          SelectedItem="{Binding SelectedCategoryForFilter}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="12" Height="12" 
+                                                        CornerRadius="6" 
+                                                        Margin="0,0,8,0"
+                                                        Background="{Binding Color}"/>
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Add New Todo Section -->
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
                         Classes="todo-card" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Add New Todo" FontWeight="SemiBold" 
@@ -153,6 +232,25 @@
                                        Margin="4,0,0,0"
                                        IsVisible="{Binding NewTodoDescriptionError, Converter={StaticResource StringToBoolConverter}}"/>
                         </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Category:" FontSize="12" FontWeight="SemiBold" 
+                                       Margin="0,0,0,4" Foreground="#64748B"/>
+                            <ComboBox ItemsSource="{Binding Categories}"
+                                      SelectedItem="{Binding NewTodoCategory}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Width="12" Height="12" 
+                                                    CornerRadius="6" 
+                                                    Margin="0,0,8,0"
+                                                    Background="{Binding Color}"/>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
                         <Button Content="Add Todo" Classes="primary"
                                 Command="{Binding AddTodoCommand}"
                                 HorizontalAlignment="Stretch"/>
@@ -160,9 +258,23 @@
                 </Border>
 
                 <!-- Todo List -->
-                <ScrollViewer Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
+                        <!-- Empty State (No todos match filter) -->
+                        <Border Classes="todo-card" 
+                                IsVisible="{Binding !HasTodos}"
+                                Margin="0,0,0,12">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20">
+                                <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                                <TextBlock Text="No todos match your search/filter" 
+                                           FontSize="16" 
+                                           Foreground="#64748B"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
                         <ItemsControl ItemsSource="{Binding Todos}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -174,11 +286,20 @@
                                             Tag="{Binding}">
                                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                                             <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,8,0">
-                                                <TextBlock Text="{Binding Title}" 
-                                                           FontWeight="SemiBold" 
-                                                           FontSize="16"
-                                                           TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToTextDecorationsConverter}}"
-                                                           Foreground="{Binding IsCompleted, Converter={StaticResource BoolToGrayConverter}}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{Binding Title}" 
+                                                               FontWeight="SemiBold" 
+                                                               FontSize="16"
+                                                               TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToTextDecorationsConverter}}"
+                                                               Foreground="{Binding IsCompleted, Converter={StaticResource BoolToGrayConverter}}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Border Width="8" Height="8" 
+                                                            CornerRadius="4" 
+                                                            Margin="8,0,0,0"
+                                                            Background="{Binding CategoryColor}"
+                                                            VerticalAlignment="Center"
+                                                            IsVisible="{Binding CategoryId, Converter={StaticResource NullableIntToBoolConverter}}"/>
+                                                </StackPanel>
                                                 <TextBlock Text="{Binding Description}" 
                                                            TextWrapping="Wrap"
                                                            Margin="0,4,0,0"
@@ -263,6 +384,20 @@
                                        Margin="0,0,0,16" TextWrapping="Wrap"
                                        Foreground="#64748B"
                                        IsVisible="{Binding SelectedTodo.Description, Converter={StaticResource StringToBoolConverter}}"/>
+                            
+                            <TextBlock Text="Category:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"
+                                       IsVisible="{Binding SelectedTodo.CategoryId, Converter={StaticResource NullableIntToBoolConverter}}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16"
+                                       IsVisible="{Binding SelectedTodo.CategoryId, Converter={StaticResource NullableIntToBoolConverter}}">
+                                <Border Width="16" Height="16" 
+                                        CornerRadius="8" 
+                                        Margin="0,0,8,0"
+                                        Background="{Binding SelectedTodo.CategoryColor}"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding SelectedTodo.CategoryName}" 
+                                           Foreground="#64748B"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
                             
                             <TextBlock Text="Status:" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="#1E293B"/>
                             <Border Background="{Binding SelectedTodo.IsCompleted, Converter={StaticResource BoolToStatusBrushConverter}}"
@@ -374,6 +509,50 @@
                                HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
+        </Grid>
+        </Grid>
+
+        <!-- Categories View -->
+        <Border IsVisible="{Binding IsCategoriesView}" 
+                Background="#F8FAFC" Margin="20">
+            <ScrollViewer>
+                <StackPanel Margin="20">
+                    <TextBlock Text="📂 Manage Categories" Classes="header"/>
+                    <TextBlock Text="Category management page coming soon..." 
+                               FontSize="16" Foreground="#64748B" Margin="0,20,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Settings View -->
+        <Border IsVisible="{Binding IsSettingsView}" 
+                Background="#F8FAFC" Margin="20">
+            <ScrollViewer>
+                <StackPanel Margin="20">
+                    <TextBlock Text="⚙️ Settings" Classes="header"/>
+                    <TextBlock Text="Settings page coming soon..." 
+                               FontSize="16" Foreground="#64748B" Margin="0,20,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- About View -->
+        <Border IsVisible="{Binding IsAboutView}" 
+                Background="#F8FAFC" Margin="20">
+            <ScrollViewer>
+                <StackPanel Margin="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="ℹ️ About Todo App" Classes="header" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Version 1.0.0" 
+                               FontSize="18" Foreground="#64748B" 
+                               Margin="0,20,0,10" HorizontalAlignment="Center"/>
+                    <TextBlock Text="A modern, cross-platform Todo application built with Avalonia UI and .NET 8." 
+                               FontSize="14" Foreground="#64748B" 
+                               TextWrapping="Wrap" 
+                               TextAlignment="Center"
+                               Margin="0,10,0,0" MaxWidth="600"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
         </Grid>
     </Grid>
 </Window>

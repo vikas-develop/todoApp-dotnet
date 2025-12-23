@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace TodoApp.Desktop.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly TodoService _todoService;
+    private readonly CategoryService _categoryService;
     private readonly NotificationService _notificationService;
     private readonly ConfirmationService _confirmationService;
     private TodoViewModel? _selectedTodo;
@@ -20,9 +22,11 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _todoService = new TodoService();
+        _categoryService = new CategoryService();
         _notificationService = new NotificationService();
         _confirmationService = new ConfirmationService();
         LoadTodos();
+        LoadCategories();
         
         AddTodoCommand = new RelayCommand(AddTodo);
         DeleteTodoCommand = new AsyncRelayCommand<TodoViewModel>(DeleteTodoAsync, CanDeleteTodo);
@@ -31,12 +35,103 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectTodoCommand = new RelayCommand<TodoViewModel>(SelectTodo);
         SaveTodoCommand = new RelayCommand(SaveTodo);
         CancelEditCommand = new RelayCommand(CancelEdit);
+        
+        // Navigation commands
+        NavigateToTodosCommand = new RelayCommand(() => NavigateToView("Todos"));
+        NavigateToCategoriesCommand = new RelayCommand(() => NavigateToView("Categories"));
+        NavigateToSettingsCommand = new RelayCommand(() => NavigateToView("Settings"));
+        NavigateToAboutCommand = new RelayCommand(() => NavigateToView("About"));
+        NewTodoCommand = new RelayCommand(() => NavigateToView("Todos"));
+        ExitCommand = new RelayCommand(ExitApplication);
+        
+        // Start with Todos view
+        NavigateToView("Todos");
     }
 
     public NotificationService NotificationService => _notificationService;
     public ConfirmationService ConfirmationService => _confirmationService;
 
+    private readonly ObservableCollection<TodoViewModel> _allTodos = new();
     public ObservableCollection<TodoViewModel> Todos { get; } = new();
+
+    private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            SetProperty(ref _searchText, value);
+            ApplyFiltersAndSort();
+        }
+    }
+
+    private FilterStatus _filterStatus = FilterStatus.All;
+    public FilterStatus FilterStatus
+    {
+        get => _filterStatus;
+        set
+        {
+            SetProperty(ref _filterStatus, value);
+            ApplyFiltersAndSort();
+        }
+    }
+
+    private SortOption _sortOption = SortOption.DateDescending;
+    public SortOption SortOption
+    {
+        get => _sortOption;
+        set
+        {
+            SetProperty(ref _sortOption, value);
+            ApplyFiltersAndSort();
+        }
+    }
+
+    public List<string> FilterStatusOptions => new() { "All", "Pending", "Completed" };
+    public List<string> SortOptions => new() 
+    { 
+        "Newest First", 
+        "Oldest First", 
+        "Title (A-Z)", 
+        "Title (Z-A)", 
+        "Status (Pending First)", 
+        "Status (Completed First)" 
+    };
+
+    private string _selectedFilterStatusText = "All";
+    public string SelectedFilterStatusText
+    {
+        get => _selectedFilterStatusText;
+        set
+        {
+            SetProperty(ref _selectedFilterStatusText, value);
+            FilterStatus = value switch
+            {
+                "Pending" => FilterStatus.Pending,
+                "Completed" => FilterStatus.Completed,
+                _ => FilterStatus.All
+            };
+        }
+    }
+
+    private string _selectedSortOptionText = "Newest First";
+    public string SelectedSortOptionText
+    {
+        get => _selectedSortOptionText;
+        set
+        {
+            SetProperty(ref _selectedSortOptionText, value);
+            SortOption = value switch
+            {
+                "Oldest First" => SortOption.DateAscending,
+                "Title (A-Z)" => SortOption.TitleAscending,
+                "Title (Z-A)" => SortOption.TitleDescending,
+                "Status (Pending First)" => SortOption.StatusAscending,
+                "Status (Completed First)" => SortOption.StatusDescending,
+                _ => SortOption.DateDescending
+            };
+        }
+    }
 
     public TodoViewModel? SelectedTodo
     {
@@ -103,6 +198,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private string _newTodoDescription = string.Empty;
     private string _newTodoDescriptionError = string.Empty;
+    private int? _newTodoCategoryId;
     
     public string NewTodoDescription
     {
@@ -119,6 +215,36 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get => _newTodoDescriptionError;
         set => SetProperty(ref _newTodoDescriptionError, value);
+    }
+
+    public int? NewTodoCategoryId
+    {
+        get => _newTodoCategoryId;
+        set => SetProperty(ref _newTodoCategoryId, value);
+    }
+
+    private Category? _newTodoCategory;
+    public Category? NewTodoCategory
+    {
+        get => _newTodoCategory;
+        set
+        {
+            SetProperty(ref _newTodoCategory, value);
+            NewTodoCategoryId = value?.Id;
+        }
+    }
+
+    public ObservableCollection<Category> Categories { get; } = new();
+    
+    private Category? _selectedCategoryForFilter;
+    public Category? SelectedCategoryForFilter
+    {
+        get => _selectedCategoryForFilter;
+        set
+        {
+            SetProperty(ref _selectedCategoryForFilter, value);
+            ApplyFiltersAndSort();
+        }
     }
 
     private void ValidateNewTodoDescription()
@@ -143,6 +269,28 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool IsTodoSelected => SelectedTodo != null;
     public bool IsNotEditing => !IsEditing;
+    public bool HasTodos => Todos.Count > 0;
+
+    // Navigation properties
+    private string _currentView = "Todos";
+    public bool IsTodosView => _currentView == "Todos";
+    public bool IsCategoriesView => _currentView == "Categories";
+    public bool IsSettingsView => _currentView == "Settings";
+    public bool IsAboutView => _currentView == "About";
+
+    private void NavigateToView(string viewName)
+    {
+        _currentView = viewName;
+        OnPropertyChanged(nameof(IsTodosView));
+        OnPropertyChanged(nameof(IsCategoriesView));
+        OnPropertyChanged(nameof(IsSettingsView));
+        OnPropertyChanged(nameof(IsAboutView));
+    }
+
+    private void ExitApplication()
+    {
+        Environment.Exit(0);
+    }
 
     public ICommand AddTodoCommand { get; }
     public ICommand DeleteTodoCommand { get; }
@@ -151,21 +299,106 @@ public partial class MainWindowViewModel : ViewModelBase
     public ICommand SelectTodoCommand { get; }
     public ICommand SaveTodoCommand { get; }
     public ICommand CancelEditCommand { get; }
+    
+    // Navigation commands
+    public ICommand NavigateToTodosCommand { get; }
+    public ICommand NavigateToCategoriesCommand { get; }
+    public ICommand NavigateToSettingsCommand { get; }
+    public ICommand NavigateToAboutCommand { get; }
+    public ICommand NewTodoCommand { get; }
+    public ICommand ExitCommand { get; }
 
     private void LoadTodos()
     {
         var selectedId = SelectedTodo?.Id;
-        Todos.Clear();
+        _allTodos.Clear();
         var todos = _todoService.GetAllTodos();
-        foreach (var todo in todos.OrderByDescending(t => t.CreatedAt))
+        foreach (var todo in todos)
         {
             var todoVm = new TodoViewModel(todo);
-            Todos.Add(todoVm);
-            
-            // Restore selection if this was the selected todo
-            if (selectedId.HasValue && todo.Id == selectedId.Value)
+            _allTodos.Add(todoVm);
+        }
+        
+        ApplyFiltersAndSort();
+        
+        // Restore selection if this was the selected todo
+        if (selectedId.HasValue)
+        {
+            var restoredTodo = Todos.FirstOrDefault(t => t.Id == selectedId.Value);
+            if (restoredTodo != null)
             {
-                SelectedTodo = todoVm;
+                SelectedTodo = restoredTodo;
+            }
+        }
+    }
+
+    private void LoadCategories()
+    {
+        Categories.Clear();
+        var categories = _categoryService.GetAllCategories();
+        foreach (var category in categories)
+        {
+            Categories.Add(category);
+        }
+    }
+
+    private void ApplyFiltersAndSort()
+    {
+        var selectedId = SelectedTodo?.Id;
+        var query = _allTodos.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var searchLower = SearchText.ToLowerInvariant();
+            query = query.Where(t => 
+                t.Title.ToLowerInvariant().Contains(searchLower) ||
+                (!string.IsNullOrEmpty(t.Description) && t.Description.ToLowerInvariant().Contains(searchLower))
+            );
+        }
+
+        // Apply status filter
+        if (FilterStatus == FilterStatus.Pending)
+        {
+            query = query.Where(t => !t.IsCompleted);
+        }
+        else if (FilterStatus == FilterStatus.Completed)
+        {
+            query = query.Where(t => t.IsCompleted);
+        }
+
+        // Apply sorting
+        query = SortOption switch
+        {
+            SortOption.DateDescending => query.OrderByDescending(t => t.CreatedAt),
+            SortOption.DateAscending => query.OrderBy(t => t.CreatedAt),
+            SortOption.TitleAscending => query.OrderBy(t => t.Title),
+            SortOption.TitleDescending => query.OrderByDescending(t => t.Title),
+            SortOption.StatusAscending => query.OrderBy(t => t.IsCompleted).ThenByDescending(t => t.CreatedAt),
+            SortOption.StatusDescending => query.OrderByDescending(t => t.IsCompleted).ThenByDescending(t => t.CreatedAt),
+            _ => query.OrderByDescending(t => t.CreatedAt)
+        };
+
+        // Update the displayed collection
+        Todos.Clear();
+        foreach (var todo in query)
+        {
+            Todos.Add(todo);
+        }
+        
+        OnPropertyChanged(nameof(HasTodos));
+
+        // Restore selection if it still exists
+        if (selectedId.HasValue)
+        {
+            var restoredTodo = Todos.FirstOrDefault(t => t.Id == selectedId.Value);
+            if (restoredTodo != null)
+            {
+                SelectedTodo = restoredTodo;
+            }
+            else
+            {
+                SelectedTodo = null; // Selected todo was filtered out
             }
         }
     }
@@ -194,14 +427,17 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 Title = NewTodoTitle.Trim(),
                 Description = NewTodoDescription?.Trim() ?? string.Empty,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                CategoryId = NewTodoCategoryId
             };
 
             _todoService.AddTodo(todo);
             _notificationService.ShowSuccess("Todo added successfully!");
-            NewTodoTitle = string.Empty;
-            NewTodoDescription = string.Empty;
-            NewTodoTitleError = string.Empty; // Clear validation error
+        NewTodoTitle = string.Empty;
+        NewTodoDescription = string.Empty;
+        NewTodoTitleError = string.Empty;
+        NewTodoCategoryId = null;
+        NewTodoCategory = null; // Clear validation error
             NewTodoDescriptionError = string.Empty; // Clear validation error
             LoadTodos();
         }
@@ -309,6 +545,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var selectedId = SelectedTodo.Id;
             var todoToSave = SelectedTodo.ToTodo();
+            todoToSave.CategoryId = SelectedTodo.Category?.Id ?? SelectedTodo.CategoryId;
             
             // Trim whitespace
             todoToSave.Title = todoToSave.Title.Trim();

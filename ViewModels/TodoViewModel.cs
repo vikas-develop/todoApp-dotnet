@@ -69,6 +69,12 @@ public partial class TodoViewModel : ViewModelBase
     [ObservableProperty]
     private bool isSelected;
 
+    [ObservableProperty]
+    private int? categoryId;
+
+    [ObservableProperty]
+    private Category? category;
+
     private string _titleError = string.Empty;
     public string TitleError
     {
@@ -96,6 +102,8 @@ public partial class TodoViewModel : ViewModelBase
         IsCompleted = todo.IsCompleted;
         CreatedAt = todo.CreatedAt;
         CompletedAt = todo.CompletedAt;
+        CategoryId = todo.CategoryId;
+        Category = todo.Category;
     }
 
     public Todo ToTodo()
@@ -107,9 +115,13 @@ public partial class TodoViewModel : ViewModelBase
             Description = Description,
             IsCompleted = IsCompleted,
             CreatedAt = CreatedAt,
-            CompletedAt = CompletedAt
+            CompletedAt = CompletedAt,
+            CategoryId = CategoryId
         };
     }
+
+    public string CategoryName => Category?.Name ?? "No Category";
+    public string CategoryColor => Category?.Color ?? "#94A3B8"; // Gray for no category
 
     public string StatusText => IsCompleted ? "COMPLETED" : "PENDING";
     public string CreatedAtText => CreatedAt.ToString("MMM dd, yyyy HH:mm");
